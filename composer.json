@@ -1,0 +1,15 @@
+{
+    "name": "doatkolom/wp-commander",
+    "autoload": {
+        "psr-4": {
+            "WpCommander\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "MD AL AMIN",
+            "email": "mdalaminbey@gmail.com"
+        }
+    ],
+    "require": {}
+}
