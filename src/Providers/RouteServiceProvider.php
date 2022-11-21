@@ -1,9 +1,9 @@
 <?php
 
-namespace WpCommander\Provider;
+namespace WpCommander\Providers;
 
 use WpCommander\Contracts\ServiceProvider;
-use WpCommander\Route\RegisterRoutes;
+use WpCommander\Route\RegisterRoute;
 
 final class RouteServiceProvider extends ServiceProvider
 {
@@ -17,24 +17,24 @@ final class RouteServiceProvider extends ServiceProvider
      *
      * @param \WP_REST_Server $wp_rest_server Server object.
      */
-    public function action_rest_api_init( \WP_REST_Server $wp_rest_server ): void
+    public function action_rest_api_init( \WP_REST_Server$wp_rest_server ): void
     {
         $application = $this->application::$instance;
 
         $config = $application::$config;
 
         /**
-         * Create RegisterRoutes instance
-         * @var RegisterRoutes $registerRoutes
+         * Create RegisterRoute instance
+         * @var RegisterRoute $registerRoute
          */
-        $registerRoutes = $application->make( $application->configuration()['api']['register_routes'] );
+        $registerRoute = $application->make( $application->configuration()['api']['register_route'] );
 
-        $registerRoutes->set_namespace( $config['namespace'] );
+        $registerRoute->set_namespace( $config['namespace'] );
 
         include_once $application->get_root_dir() . '/routes/api.php';
 
         foreach ( $config['api_versions'] as $version ) {
-            $registerRoutes->set_version( $version );
+            $registerRoute->set_version( $version );
             include_once $application->get_root_dir() . '/routes/' . $version . '.php';
         }
     }

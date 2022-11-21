@@ -3,6 +3,7 @@
 namespace WpCommander\Route;
 
 use WpCommander\Application;
+use WP_REST_Request;
 
 abstract class Route
 {
@@ -20,17 +21,23 @@ abstract class Route
 
     private static function register( $path, $callback, $method, $public ): void
     {
-        $path = trim( $path, '/' );
-        $path = static::format_api_regex( $path );
-        $args = [
+        $path  = trim( $path, '/' );
+        $route = static::format_api_regex( $path );
+        $args  = [
             'methods'             => $method,
-            'callback'            => function () use ( $callback ) {
+            'callback'            => function ( WP_REST_Request $wp_rest_request ) use ( $callback, $route ) {
                 if ( is_array( $callback ) ) {
+                    $class     = new \ReflectionClass( $callback[0] );
+                    $arguments = self::dependency_injection( $route, $class->getMethod( $callback[1] )->getParameters(), $wp_rest_request );
+
                     $controller = new $callback[0];
                     $method     = $callback[1];
-                    return $controller->$method();
+                    return $controller->$method( ...$arguments );
                 }
-                return $callback();
+
+                $reflection_function = new \ReflectionFunction( $callback );
+                $arguments           = self::dependency_injection( $route, $reflection_function->getParameters(), $wp_rest_request );
+                return $callback( ...$arguments );
             },
             'permission_callback' => function () use ( $public ) {
                 if ( $public ) {
@@ -43,48 +50,79 @@ abstract class Route
         $application = static::get_application_instance();
 
         /**
-         * @var RegisterRoutes $registerRoutes
+         * Create RegisterRoute instance
+         * @var RegisterRoute $registerRoute
          */
-        $registerRoutes = $application->make( $application->configuration()['api']['register_routes'] );
-        $namespace      = $registerRoutes->get_namespace();
-        $version        = $registerRoutes->get_version();
+        $registerRoute = $application->make( $application->configuration()['api']['register_route'] );
+        $namespace     = $registerRoute->get_namespace();
+        $version       = $registerRoute->get_version();
         if ( $version ) {
-            $full_path = '/' . $namespace . '/' . $version . '/' . $path;
+            $full_path = '/' . $namespace . '/' . $version . '/' . $route['path'];
         } else {
-            $full_path = '/' . $namespace . '/' . $path;
+            $full_path = '/' . $namespace . '/' . $route['path'];
         }
-        $registerRoutes->wp_rest_server->register_route( $namespace, $full_path, [$args] );
+        $registerRoute->wp_rest_server->register_route( $namespace, $full_path, [$args] );
     }
 
-    protected static function format_api_regex( string $route ): string
+    protected static function dependency_injection( array $route, array $params, WP_REST_Request $wp_rest_request )
     {
-        if ( strpos( $route, '}' ) !== false ) {
-            if ( strpos( $route, '?}' ) !== false ) {
-                $route = static::optional_param( $route );
+        $arguments = [];
+
+        foreach ( $params as $key => $param ) {
+            $param_type = $param->getType();
+            if ( empty( $param_type ) ) {
+                if ( !empty( $route['route_params'][$key] ) ) {
+                    $arguments[] = $wp_rest_request->get_param( rtrim( $route['route_params'][$key], '?' ) );
+                }
             } else {
-                $route = static::required_param( $route );
+                $param_type = $param->getType()->getName();
+                if ( in_array( $param_type, ['string', 'int'] ) ) {
+                    if ( !empty( $route['route_params'][$key] ) ) {
+                        $arguments[] = $wp_rest_request->get_param( rtrim( $route['route_params'][$key], '?' ) );
+                    }
+                } elseif ( 'WP_REST_Request' === $param_type ) {
+                    $arguments[] = $wp_rest_request;
+                } else {
+                    $arguments[] = new $param_type;
+                }
             }
         }
 
-        return $route;
+        return $arguments;
     }
 
-    protected static function optional_param( string $route ): string
+    protected static function format_api_regex( string $route ): array
     {
-        preg_match_all( '#\{(.*?)\}#', $route, $match );
-        foreach ( $match[0] as $key => $value ) {
-            $route = str_replace( '/' . $value, '(?:/(?P<' . str_replace( '?', '', $match[1][$key] ) . '>[-\w]+))?', $route );
+        $route_params = [];
+
+        if ( strpos( $route, '}' ) !== false ) {
+            preg_match_all( '#\{(.*?)\}#', $route, $params );
+            if ( strpos( $route, '?}' ) !== false ) {
+                $route = static::optional_param( $route, $params );
+            } else {
+                $route = static::required_param( $route, $params );
+            }
+            $route_params = $params[1];
+        }
+
+        return ['path' => $route, 'route_params' => $route_params];
+    }
+
+    protected static function optional_param( string $route, array $params ): string
+    {
+        foreach ( $params[0] as $key => $value ) {
+            $route = str_replace( '/' . $value, '(?:/(?P<' . str_replace( '?', '', $params[1][$key] ) . '>[-\w]+))?', $route );
         }
 
         return $route;
     }
 
-    protected static function required_param( string $route ): string
+    protected static function required_param( string $route, array $params ): string
     {
-        preg_match_all( '#\{(.*?)\}#', $route, $match );
-        foreach ( $match[0] as $key => $value ) {
-            $route = str_replace( $value, '(?P<' . $match[1][$key] . '>[-\w]+)', $route );
+        foreach ( $params[0] as $key => $value ) {
+            $route = str_replace( $value, '(?P<' . $params[1][$key] . '>[-\w]+)', $route );
         }
+
         return $route;
     }
 }

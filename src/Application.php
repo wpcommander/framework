@@ -4,15 +4,12 @@ namespace WpCommander;
 
 use WpCommander\Configs\Config;
 use WpCommander\Contracts\ServiceProvider;
-use WpCommander\Provider\RouteServiceProvider;
+use WpCommander\Providers\RouteServiceProvider;
 
 abstract class Application extends Config
 {
-    public static $instance;
-    protected static $instances = [];
-    public static $config;
-    protected static $root_dir;
-    protected static $is_boot = false;
+    public static $instance, $config;
+    protected static $instances = [], $is_boot = false, $root_dir;
 
     abstract public function configuration(): array;
 
