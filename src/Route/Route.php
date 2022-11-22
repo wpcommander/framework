@@ -2,26 +2,49 @@
 
 namespace WpCommander\Route;
 
+use Closure;
 use WpCommander\Application;
+use WpCommander\Contracts\Middleware;
 use WP_REST_Request;
 
 abstract class Route
 {
+    protected static $group_configuration = [];
+
     abstract protected static function get_application_instance(): Application;
 
-    public static function get( $path, $callback, $public = false ): void
+    public static function group( $prefix_or_configuration, Closure $routes )
+    {
+        if ( is_string( $prefix_or_configuration ) ) {
+            self::$group_configuration['prefix'] = $prefix_or_configuration;
+        } else {
+            self::$group_configuration = $prefix_or_configuration;
+        }
+
+        $routes();
+        self::$group_configuration = [];
+    }
+
+    public static function get( string $path, $callback, $public = false ): void
     {
         static::register( $path, $callback, 'GET', $public );
     }
 
-    public static function post( $path, $callback, $public = false ): void
+    public static function post( string $path, $callback, $public = false ): void
     {
         static::register( $path, $callback, 'POST', $public );
     }
 
-    private static function register( $path, $callback, $method, $public ): void
+    private static function register( string $path, $callback, $method, $public ): void
     {
-        $path  = trim( $path, '/' );
+        $group_configuration = self::$group_configuration;
+
+        if ( !empty( $group_configuration['prefix'] ) ) {
+            $path = trim( $group_configuration['prefix'], '/' ) . '/' . trim( $path, '/' );
+        } else {
+            $path = trim( $path, '/' );
+        }
+
         $route = static::format_api_regex( $path );
         $args  = [
             'methods'             => $method,
@@ -39,11 +62,18 @@ abstract class Route
                 $arguments           = self::dependency_injection( $route, $reflection_function->getParameters(), $wp_rest_request );
                 return $callback( ...$arguments );
             },
-            'permission_callback' => function () use ( $public ) {
+            'permission_callback' => function ( WP_REST_Request $wp_rest_request ) use ( $public, $group_configuration ) {
                 if ( $public ) {
-                    return true;
+                    if ( self::handle_middleware( $wp_rest_request, $group_configuration ) ) {
+                        return true;
+                    }
+                } elseif ( current_user_can( 'manage_options' ) ) {
+                    if ( self::handle_middleware( $wp_rest_request, $group_configuration ) ) {
+                        return true;
+                    }
                 }
-                return current_user_can( 'manage_options' );
+
+                return false;
             }
         ];
 
@@ -61,7 +91,26 @@ abstract class Route
         } else {
             $full_path = '/' . $namespace . '/' . $route['path'];
         }
+
         $registerRoute->wp_rest_server->register_route( $namespace, $full_path, [$args] );
+    }
+
+    protected static function handle_middleware( WP_REST_Request $wp_rest_request, $group_configuration )
+    {
+        if ( isset( $group_configuration['middleware'] ) && is_array( $group_configuration['middleware'] ) ) {
+            $application       = static::get_application_instance();
+            $config_middleware = $application::$config['middleware'];
+            foreach ( $group_configuration['middleware'] as $middleware ) {
+                if ( isset( $config_middleware[$middleware] ) ) {
+                    $middleware_instance = new $config_middleware[$middleware];
+                    if ( $middleware_instance instanceof Middleware && !$middleware_instance->handle( $wp_rest_request ) ) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     protected static function dependency_injection( array $route, array $params, WP_REST_Request $wp_rest_request )
