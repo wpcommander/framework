@@ -9,7 +9,7 @@ use WpCommander\Providers\RouteServiceProvider;
 abstract class Application extends Config
 {
     public static $instance, $config;
-    protected static $instances = [], $is_boot = false, $root_dir;
+    protected static $instances = [], $is_boot = false, $root_dir, $root_url;
 
     abstract public function configuration(): array;
 
@@ -24,16 +24,17 @@ abstract class Application extends Config
         return static::$instance;
     }
 
-    public function boot( string $root_dir )
+    public function boot( string $root_dir, string $root_file )
     {
         if ( static::$is_boot ) {
             return;
         }
 
         static::$is_boot = true;
-        $this->set_root_dir( $root_dir );
+        $this->set_root_dir_and_url( $root_dir, $root_file );
         $this->set_config();
         $this->run_system_provider();
+        $this->run_provider();
     }
 
     private function set_config()
@@ -57,14 +58,41 @@ abstract class Application extends Config
         }
     }
 
-    private function set_root_dir( string $root_dir )
+    public function run_provider()
+    {
+        if ( is_admin() ) {
+            foreach ( static::$config['admin_providers'] as $provider ) {
+                /**
+                 * @var ServiceProvider $provider_object
+                 */
+                $provider_object = new $provider( static::$instance );
+                $provider_object->boot( static::$instance );
+            }
+        }
+
+        foreach ( static::$config['providers'] as $provider ) {
+            /**
+             * @var ServiceProvider $provider_object
+             */
+            $provider_object = new $provider( static::$instance );
+            $provider_object->boot( static::$instance );
+        }
+    }
+
+    private function set_root_dir_and_url( string $root_dir, string $root_file )
     {
         static::$root_dir = $root_dir;
+        static::$root_url = trailingslashit( plugin_dir_url( $root_file ) );
     }
 
     public function get_root_dir(): string
     {
         return static::$root_dir;
+    }
+
+    public function get_root_url(): string
+    {
+        return static::$root_url;
     }
 
     public function make( $class )

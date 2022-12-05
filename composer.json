@@ -3,7 +3,10 @@
     "autoload": {
         "psr-4": {
             "WpCommander\\": "src/"
-        }
+        },
+        "files": [
+            "src/Helpers/Helper.php"
+        ]
     },
     "authors": [
         {
