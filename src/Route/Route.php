@@ -55,12 +55,16 @@ abstract class Route
 
                     $controller = new $callback[0];
                     $method     = $callback[1];
-                    return $controller->$method( ...$arguments );
+                    $response   = $controller->$method( ...$arguments );
+                } else {
+                    $reflection_function = new \ReflectionFunction( $callback );
+                    $arguments           = self::dependency_injection( $route, $reflection_function->getParameters(), $wp_rest_request );
+                    $response   = $callback( ...$arguments );
                 }
-
-                $reflection_function = new \ReflectionFunction( $callback );
-                $arguments           = self::dependency_injection( $route, $reflection_function->getParameters(), $wp_rest_request );
-                return $callback( ...$arguments );
+                if($response) {
+                    return $response;
+                }
+                die;
             },
             'permission_callback' => function ( WP_REST_Request $wp_rest_request ) use ( $public, $group_configuration ) {
                 if ( $public ) {

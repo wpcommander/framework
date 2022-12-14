@@ -4,6 +4,9 @@ if ( !function_exists( 'wp_commander_is_admin_page' ) ) {
     function wp_commander_is_admin_page( string $file_name = 'admin', array $params = [] ): bool
     {
         $pathinfo        = pathinfo( $_SERVER['REQUEST_URI'] );
+        if(strpos($pathinfo['filename'], 'php')) {
+            $pathinfo['filename'] = explode('.', $pathinfo['filename'])[0];
+        }
         $is_current_file = $pathinfo['filename'] === $file_name || false;
         if ( $is_current_file ) {
             foreach ( $params as $key => $value ) {
