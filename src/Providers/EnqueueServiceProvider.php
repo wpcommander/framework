@@ -41,7 +41,8 @@ final class EnqueueServiceProvider extends ServiceProvider
      */
     public function action_admin_enqueue_scripts( string $hook_suffix ): void
     {
-        include_once $this->application->get_root_dir() . '/enqueues/admin-scripts.php';
+        $application = $this->application;
+        include_once $application->get_root_dir() . '/enqueues/admin-scripts.php';
     }
 
     /**
@@ -50,7 +51,8 @@ final class EnqueueServiceProvider extends ServiceProvider
      */
     public function action_wp_enqueue_scripts(): void
     {
-        include_once $this->application->get_root_dir() . '/enqueues/frontend-scripts.php';
+        $application = $this->application;
+        include_once $application->get_root_dir() . '/enqueues/frontend-scripts.php';
     }
 
 }
