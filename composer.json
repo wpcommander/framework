@@ -1,5 +1,7 @@
 {
     "name": "doatkolom/wp-commander",
+    "type": "library",
+    "license": "MIT",
     "autoload": {
         "psr-4": {
             "WpCommander\\": "src/"
