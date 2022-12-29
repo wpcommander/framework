@@ -12,9 +12,11 @@
     },
     "authors": [
         {
-            "name": "MD AL AMIN",
-            "email": "mdalaminbey@gmail.com"
+            "name": "DoatKolom",
+            "email": "doatkolomofficial@gmail.com"
         }
     ],
-    "require": {}
+    "require": {},
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
