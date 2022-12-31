@@ -1,5 +1,5 @@
 {
-    "name": "doatkolom/wp-commander",
+    "name": "wpcommander/framework",
     "type": "library",
     "license": "MIT",
     "autoload": {
@@ -12,8 +12,8 @@
     },
     "authors": [
         {
-            "name": "DoatKolom",
-            "email": "doatkolomofficial@gmail.com"
+            "name": "MD AL AMIN",
+            "email": "mdalaminbey@gmail.com"
         }
     ],
     "require": {},
