@@ -15,7 +15,7 @@ abstract class Common
      */
     public static function asset( $asset = '' )
     {
-        return self::get_application_instance()->get_root_url() . 'assets/' . trim( $asset, '/' );
+        return static::get_application_instance()->get_root_url() . 'assets/' . trim( $asset, '/' );
     }
 
     /**
@@ -25,7 +25,7 @@ abstract class Common
      */
     public static function version()
     {
-        return self::get_application_instance()::$config['version'];
+        return static::get_application_instance()::$config['version'];
     }
 
     /**

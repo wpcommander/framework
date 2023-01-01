@@ -67,17 +67,7 @@ abstract class Route
                 die;
             },
             'permission_callback' => function ( WP_REST_Request $wp_rest_request ) use ( $public, $group_configuration ) {
-                if ( $public ) {
-                    if ( self::handle_middleware( $wp_rest_request, $group_configuration ) ) {
-                        return true;
-                    }
-                } elseif ( current_user_can( 'manage_options' ) ) {
-                    if ( self::handle_middleware( $wp_rest_request, $group_configuration ) ) {
-                        return true;
-                    }
-                }
-
-                return false;
+                return self::handle_middleware( $wp_rest_request, $group_configuration );
             }
         ];
 
