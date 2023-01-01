@@ -148,7 +148,7 @@ abstract class Route
             $route_params = $params[1];
         }
 
-        return ['path' => $route, 'route_params' => $route_params];
+        return ['path' => trim($route, '/'), 'route_params' => $route_params];
     }
 
     protected static function optional_param( string $route, array $params ): string
