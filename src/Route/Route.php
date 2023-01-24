@@ -25,17 +25,22 @@ abstract class Route
         self::$group_configuration = [];
     }
 
-    public static function get( string $path, $callback, $public = false ): void
+    public static function get( string $path, $callback ): void
     {
-        static::register( $path, $callback, 'GET', $public );
+        static::register( $path, $callback, 'GET' );
     }
 
-    public static function post( string $path, $callback, $public = false ): void
+    public static function post( string $path, $callback, ): void
     {
-        static::register( $path, $callback, 'POST', $public );
+        static::register( $path, $callback, 'POST' );
     }
 
-    private static function register( string $path, $callback, $method, $public ): void
+    public static function patch( string $path, $callback ): void
+    {
+        static::register( $path, $callback, 'PATCH' );
+    }
+
+    private static function register( string $path, $callback, $method ): void
     {
         $group_configuration = self::$group_configuration;
 
