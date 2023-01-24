@@ -71,7 +71,7 @@ abstract class Route
                 }
                 die;
             },
-            'permission_callback' => function ( WP_REST_Request $wp_rest_request ) use ( $public, $group_configuration ) {
+            'permission_callback' => function ( WP_REST_Request $wp_rest_request ) use ( $group_configuration ) {
                 return self::handle_middleware( $wp_rest_request, $group_configuration );
             }
         ];
