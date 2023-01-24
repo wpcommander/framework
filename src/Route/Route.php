@@ -30,7 +30,7 @@ abstract class Route
         static::register( $path, $callback, 'GET' );
     }
 
-    public static function post( string $path, $callback, ): void
+    public static function post( string $path, $callback ): void
     {
         static::register( $path, $callback, 'POST' );
     }
