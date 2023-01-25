@@ -5,6 +5,7 @@ namespace WpCommander;
 use WpCommander\Configs\Config;
 use WpCommander\Contracts\ServiceProvider;
 use WpCommander\Providers\EnqueueServiceProvider;
+use WpCommander\Providers\MigrationServiceProvider;
 use WpCommander\Providers\RouteServiceProvider;
 
 abstract class Application extends Config
@@ -107,6 +108,7 @@ abstract class Application extends Config
     private function get_system_provider()
     {
         return [
+            MigrationServiceProvider::class,
             RouteServiceProvider::class,
             EnqueueServiceProvider::class
         ];
