@@ -13,7 +13,7 @@ final class MigrationServiceProvider extends ServiceProvider
 
         $migration_time = $this->application::$config['migration_time'];
 
-        $last_migration_run_time = get_option( $plugin_name . '_last_migration_run_time', 1 );
+        $last_migration_run_time = get_option( $plugin_name . '_last_migration_run_time', 0 );
 
         if ( $last_migration_run_time < $migration_time ) {
 
