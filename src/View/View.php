@@ -13,14 +13,14 @@ abstract class View
     public static function render( string $path, array $args = [] )
     {
         extract( $args );
-        include self::get_path( $path );
+        include static::get_path( $path );
     }
 
     public static function send( string $path, array $args = [] )
     {
         extract( $args );
         ob_start();
-        include self::get_path( $path );
+        include static::get_path( $path );
         ob_flush();
     }
 

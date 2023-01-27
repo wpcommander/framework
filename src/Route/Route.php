@@ -6,6 +6,7 @@ use Closure;
 use WpCommander\Application;
 use WpCommander\Contracts\Middleware;
 use WP_REST_Request;
+use WpCommander\Di\ContainerException;
 
 abstract class Route
 {
@@ -13,131 +14,246 @@ abstract class Route
 
     abstract protected static function get_application_instance(): Application;
 
+    /**
+	 * Group APIs of the same prefix or middleware type
+	 *
+	 * @param string|array $prefix_or_configuration
+	 * @param \Closure     $routes
+	 * @return void
+	 */
     public static function group( $prefix_or_configuration, Closure $routes )
     {
         if ( is_string( $prefix_or_configuration ) ) {
-            self::$group_configuration['prefix'] = $prefix_or_configuration;
+            static::$group_configuration['prefix'] = $prefix_or_configuration;
         } else {
-            self::$group_configuration = $prefix_or_configuration;
+            static::$group_configuration = $prefix_or_configuration;
         }
 
         $routes();
-        self::$group_configuration = [];
+        static::$group_configuration = [];
     }
 
+    /**
+	 * Get method type route
+	 *
+	 * @param string         $path
+	 * @param array|\Closure $callback
+	 * @return void
+	 */
     public static function get( string $path, $callback ): void
     {
         static::register( $path, $callback, 'GET' );
     }
 
+    /**
+	 * Post method type route
+	 *
+	 * @param string         $path
+	 * @param array|\Closure $callback
+	 * @return void
+	 */
     public static function post( string $path, $callback ): void
     {
         static::register( $path, $callback, 'POST' );
     }
 
+    /**
+	 * Patch method type route
+	 *
+	 * @param string         $path
+	 * @param array|\Closure $callback
+	 * @return void
+	 */
     public static function patch( string $path, $callback ): void
     {
         static::register( $path, $callback, 'PATCH' );
     }
 
-    private static function register( string $path, $callback, $method ): void
-    {
-        $group_configuration = self::$group_configuration;
+    /**
+	 * Registering rest API with `rest_get_server()`
+	 *
+	 * @param string         $path
+	 * @param array|\Closure $callback
+	 * @param string         $method
+	 * @return void
+	 */
+    private static function register( string $path, $callback, $method ): void {
 
-        if ( !empty( $group_configuration['prefix'] ) ) {
-            $path = trim( $group_configuration['prefix'], '/' ) . '/' . trim( $path, '/' );
-        } else {
-            $path = trim( $path, '/' );
-        }
+		$group_configuration = static::$group_configuration;
 
-        $route = static::format_api_regex( $path );
-        $args  = [
-            'methods'             => $method,
-            'callback'            => function ( WP_REST_Request $wp_rest_request ) use ( $callback, $route ) {
-                if ( is_array( $callback ) ) {
-                    $class     = new \ReflectionClass( $callback[0] );
-                    $arguments = self::dependency_injection( $route, $class->getMethod( $callback[1] )->getParameters(), $wp_rest_request );
+		if ( ! empty( $group_configuration['prefix'] ) ) {
+			$path = trim( $group_configuration['prefix'], '/' ) . '/' . trim( $path, '/' );
+		} else {
+			$path = trim( $path, '/' );
+		}
 
-                    $controller = new $callback[0];
-                    $method     = $callback[1];
-                    $response   = $controller->$method( ...$arguments );
-                } else {
-                    $reflection_function = new \ReflectionFunction( $callback );
-                    $arguments           = self::dependency_injection( $route, $reflection_function->getParameters(), $wp_rest_request );
-                    $response   = $callback( ...$arguments );
-                }
-                if($response) {
-                    return $response;
-                }
-                die;
-            },
-            'permission_callback' => function ( WP_REST_Request $wp_rest_request ) use ( $group_configuration ) {
-                return self::handle_middleware( $wp_rest_request, $group_configuration );
-            }
-        ];
+		$args = array(
+			'methods'             => $method,
+			'callback'            => function ( WP_REST_Request $wp_rest_request ) use ( $callback ) {
 
-        $application = static::get_application_instance();
+				$response = static::get_response( $callback, $wp_rest_request );
 
-        /**
-         * Create RegisterRoute instance
-         * @var RegisterRoute $registerRoute
-         */
-        $registerRoute = $application->make( $application->configuration()['api']['register_route'] );
-        $namespace     = $registerRoute->get_namespace();
-        $version       = $registerRoute->get_version();
-        if ( $version ) {
-            $full_path = '/' . $namespace . '/' . $version . '/' . $route['path'];
-        } else {
-            $full_path = '/' . $namespace . '/' . $route['path'];
-        }
+				if ( $wp_rest_request->has_param( 'return' ) ) {
+					return $response;
+				}
 
-        $registerRoute->wp_rest_server->register_route( $namespace, $full_path, [$args] );
-    }
+				wp_send_json( $response['data'], $response['status'] );
+			},
+			'permission_callback' => function ( WP_REST_Request $wp_rest_request ) use ( $group_configuration ) {
+				return static::handle_middleware( $wp_rest_request, $group_configuration );
+			},
+		);
 
-    protected static function handle_middleware( WP_REST_Request $wp_rest_request, $group_configuration )
-    {
-        if ( isset( $group_configuration['middleware'] ) && is_array( $group_configuration['middleware'] ) ) {
-            $application       = static::get_application_instance();
-            $config_middleware = $application::$config['middleware'];
-            foreach ( $group_configuration['middleware'] as $middleware ) {
-                if ( isset( $config_middleware[$middleware] ) ) {
-                    $middleware_instance = new $config_middleware[$middleware];
-                    if ( $middleware_instance instanceof Middleware && !$middleware_instance->handle( $wp_rest_request ) ) {
-                        return false;
-                    }
-                }
-            }
-        }
+		/**
+		 * Create RegisterRoute instance
+		 *
+		 * @var RegisterRoute $register_route
+		 */
+		$register_route = static::get_application_instance()::$container->singleton( RegisterRoute::class );
+		$namespace      = $register_route->get_namespace();
+		$version        = $register_route->get_version();
+		$route          = static::format_api_regex( $path );
 
-        return true;
-    }
+		if ( $version ) {
+			$full_path = '/' . $namespace . '/' . $version . '/' . $route['path'];
+		} else {
+			$full_path = '/' . $namespace . '/' . $route['path'];
+		}
 
-    protected static function dependency_injection( array $route, array $params, WP_REST_Request $wp_rest_request )
-    {
-        $arguments = [];
+		rest_get_server()->register_route( $namespace, $full_path, array( $args ) );
+	}
 
-        foreach ( $params as $key => $param ) {
-            $param_type = $param->getType();
-            if ( empty( $param_type ) ) {
-                if ( !empty( $route['route_params'][$key] ) ) {
-                    $arguments[] = $wp_rest_request->get_param( rtrim( $route['route_params'][$key], '?' ) );
-                }
-            } else {
-                $param_type = $param->getType()->getName();
-                if ( in_array( $param_type, ['string', 'int'] ) ) {
-                    if ( !empty( $route['route_params'][$key] ) ) {
-                        $arguments[] = $wp_rest_request->get_param( rtrim( $route['route_params'][$key], '?' ) );
-                    }
-                } elseif ( 'WP_REST_Request' === $param_type ) {
-                    $arguments[] = $wp_rest_request;
-                } else {
-                    $arguments[] = new $param_type;
-                }
-            }
-        }
+	/**
+	 * Inject callback dependencies and get response
+	 *
+	 * @param array|\Closure  $callback
+	 * @param WP_REST_Request $wp_rest_request
+	 *
+	 * @throws \Exception Error while callback is wrong.
+	 *
+	 * @return mixed
+	 */
+	protected static function get_response( $callback, WP_REST_Request $wp_rest_request ) {
 
-        return $arguments;
-    }
+		/**
+		 * If send controller callback
+		 */
+		if ( is_array( $callback ) && count( $callback ) === 2 ) {
+			/**
+			 * Create controller instance with DI Container
+			 */
+			$controller = static::get_application_instance()::$container->get( $callback[0] );
+			$method     = $callback[1];
+
+			/**
+			 * Get method required parameters
+			 */
+			$reflection_controller = new \ReflectionObject( $controller );
+			$parameters            = $reflection_controller->getMethod( $method )->getParameters();
+
+			/**
+			 * Get dependencies
+			 */
+			$dependencies = static::get_dependencies( $parameters, $wp_rest_request );
+
+			return $controller->$method( ...$dependencies );
+		}
+
+		/**
+		 * If send anonyms function callback
+		 */
+		if ( is_callable( $callback ) ) {
+			/**
+			* Get method required parameters
+			*/
+			$reflection_callback = new \ReflectionFunction( $callback );
+			$parameters          = $reflection_callback->getParameters();
+
+			/**
+			* Get dependencies
+			*/
+			$dependencies = static::get_dependencies( $parameters, $wp_rest_request );
+
+			return $callback( ...$dependencies );
+		}
+
+		throw new \Exception( 'Please bind callable method in this route' );
+	}
+
+	/**
+	 * Get route callback dependencies
+	 *
+	 * @param array           $parameters
+	 * @param WP_REST_Request $wp_rest_request
+	 *
+	 * @throws ContainerException Error while retrieving the entry.
+	 *
+	 * @return array
+	 */
+	protected static function get_dependencies( array $parameters, WP_REST_Request $wp_rest_request ) {
+
+		return array_map(
+			function( \ReflectionParameter $parameter ) use ( $wp_rest_request ) {
+				$type = $parameter->getType();
+				$name = $parameter->getName();
+
+				if ( ! $type ) {
+					throw new ContainerException( 'Failed to resolve because param "' . $name . '" is missing a type hint' );
+				}
+
+				if ( $type->isBuiltin() ) {
+					return $wp_rest_request->get_param( $name );
+				}
+
+				if ( 'WP_REST_Request' === $type->getName() ) {
+					return $wp_rest_request;
+				}
+
+				if ( $type instanceof \ReflectionNamedType ) {
+					return static::get_application_instance()::$container->get( $type->getName() );
+				}
+
+				throw new ContainerException( 'Failed to resolve class "' . $name . '" because invalid param "' . $name . '"' );
+			},
+			$parameters
+		);
+	}
+
+    /**
+	 * Handle route all middleware
+	 *
+	 * @param WP_REST_Request $wp_rest_request
+	 * @param array           $group_configuration
+	 * @return bool
+	 */
+	protected static function handle_middleware( WP_REST_Request $wp_rest_request, array $group_configuration ) {
+
+		if ( isset( $group_configuration['middleware'] ) && is_array( $group_configuration['middleware'] ) ) {
+			/**
+			 * Get plugin all middleware
+			 */
+			$application       = static::get_application_instance();
+			$config_middleware = $application::$config['middleware'];
+
+			/**
+			 * Check route middleware one by one
+			 */
+			foreach ( $group_configuration['middleware'] as $middleware ) {
+
+				/**
+				 * If the route middleware exists in `config/app.php`
+				 */
+				if ( isset( $config_middleware[ $middleware ] ) ) {
+					$middleware_instance = $application::$container->get( $config_middleware[ $middleware ] );
+					if ( $middleware_instance instanceof Middleware && ! $middleware_instance->handle( $wp_rest_request ) ) {
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
+	}
 
     protected static function format_api_regex( string $route ): array
     {

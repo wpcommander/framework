@@ -16,7 +16,9 @@
             "email": "mdalaminbey@gmail.com"
         }
     ],
-    "require": {},
+    "require": {
+        "psr/container": "^2.0"
+    },
     "minimum-stability": "dev",
     "prefer-stable": true
 }

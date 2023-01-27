@@ -4,6 +4,7 @@ namespace WpCommander;
 
 use WpCommander\Configs\Config;
 use WpCommander\Contracts\ServiceProvider;
+use WpCommander\Di\Container;
 use WpCommander\Providers\EnqueueServiceProvider;
 use WpCommander\Providers\MigrationServiceProvider;
 use WpCommander\Providers\RouteServiceProvider;
@@ -12,6 +13,7 @@ abstract class Application extends Config
 {
     public static $instance, $config;
     protected static $instances = [], $is_boot = false, $root_dir, $root_url;
+    public static Container $container;
 
     abstract public function configuration(): array;
 
@@ -26,13 +28,22 @@ abstract class Application extends Config
         return static::$instance;
     }
 
+    /**
+	 * This method is helping to load the plugin
+	 *
+	 * @param string $root_dir plugin root file `__DIR__`.
+	 * @param string $root_file plugin root file `__FILE__`.
+	 * @return void
+	 */
     public function boot( string $root_dir, string $root_file )
     {
         if ( static::$is_boot ) {
             return;
         }
 
-        static::$is_boot = true;
+        static::$is_boot   = true;
+        static::$container = new Container();
+
         $this->set_root_dir_and_url( $root_dir, $root_file );
         $this->set_config();
         $this->run_system_provider();
@@ -49,62 +60,86 @@ abstract class Application extends Config
         return $this->get_config_form_file( $file_name, $this->get_root_dir() );
     }
 
-    private function run_system_provider()
-    {
-        foreach ( $this->get_system_provider() as $provider ) {
-            /**
-             * @var ServiceProvider $provider_object
-             */
-            $provider_object = new $provider( static::$instance );
-            $provider_object->boot( static::$instance );
-        }
-    }
+    /**
+	 * Boot plugin system provider
+	 *
+	 * @return void
+	 */
+	private function run_system_provider() {
 
-    public function run_provider()
-    {
-        if ( is_admin() ) {
-            foreach ( static::$config['admin_providers'] as $provider ) {
-                /**
-                 * @var ServiceProvider $provider_object
-                 */
-                $provider_object = new $provider( static::$instance );
-                $provider_object->boot( static::$instance );
-            }
-        }
+		foreach ( $this->get_system_provider() as $provider ) {
+			/**
+			 * @var ServiceProvider $provider_object
+			 */
+			$provider_object = static::$container->singleton( $provider );
+			$provider_object->boot();
+		}
+	}
 
-        foreach ( static::$config['providers'] as $provider ) {
-            /**
-             * @var ServiceProvider $provider_object
-             */
-            $provider_object = new $provider( static::$instance );
-            $provider_object->boot( static::$instance );
-        }
-    }
+    /**
+	 * Boot Admin and Other form `config/app.php`
+	 *
+	 * @return void
+	 */
+	public function run_provider() {
 
+		if ( is_admin() ) {
+			foreach ( static::$config['admin_providers'] as $provider ) {
+				/**
+				 * @var ServiceProvider $provider_object
+				 */
+				$provider_object = static::$container->singleton( $provider );
+				$provider_object->boot( static::$instance );
+			}
+		}
+
+		foreach ( static::$config['providers'] as $provider ) {
+			/**
+			 * @var ServiceProvider $provider_object
+			 */
+			$provider_object = static::$container->singleton( $provider );
+			$provider_object->boot( static::$instance );
+		}
+	}
+
+    /**
+	 * Set plugin root directory and path
+	 *
+	 * @param string $root_dir plugin root file `__DIR__`.
+	 * @param string $root_file plugin root file `__FILE__`.
+	 * @return void
+	 */
     private function set_root_dir_and_url( string $root_dir, string $root_file )
     {
         static::$root_dir = $root_dir;
         static::$root_url = trailingslashit( plugin_dir_url( $root_file ) );
     }
 
+    /**
+	 * Get plugin root directory
+	 *
+	 * @return string
+	 */
     public function get_root_dir(): string
     {
         return static::$root_dir;
     }
 
+    /**
+	 * Get plugin root url
+	 *
+	 * @return string
+	 */
     public function get_root_url(): string
     {
         return static::$root_url;
     }
 
-    public function make( $class )
-    {
-        if ( empty( static::$instances[$class] ) ) {
-            static::$instances[$class] = new $class;
-        }
-        return static::$instances[$class];
-    }
-
+    /**
+	 * Register system service provider
+	 *
+	 * @return array
+	 */
     private function get_system_provider()
     {
         return [

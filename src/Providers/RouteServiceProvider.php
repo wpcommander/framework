@@ -14,28 +14,27 @@ final class RouteServiceProvider extends ServiceProvider
 
     /**
      * Fires when preparing to serve a REST API request.
-     *
-     * @param \WP_REST_Server $wp_rest_server Server object.
      */
-    public function action_rest_api_init( \WP_REST_Server$wp_rest_server ): void
+    public function action_rest_api_init(): void
     {
-        $application = $this->application::$instance;
+        $application = $this->application;
+		$config      = $application::$config;
+		$container   = $application::$container;
 
-        $config = $application::$config;
+		/**
+		* Create RegisterRoute instance
+		*
+		* @var RegisterRoute $register_route
+		*/
+		$register_route = $container->singleton( RegisterRoute::class );
 
-        /**
-         * Create RegisterRoute instance
-         * @var RegisterRoute $registerRoute
-         */
-        $registerRoute = $application->make( $application->configuration()['api']['register_route'] );
+		$register_route->set_namespace( $config['namespace'] );
 
-        $registerRoute->set_namespace( $config['namespace'] );
+		include $application->get_root_dir() . '/routes/api.php';
 
-        include_once $application->get_root_dir() . '/routes/api.php';
-
-        foreach ( $config['api_versions'] as $version ) {
-            $registerRoute->set_version( $version );
-            include_once $application->get_root_dir() . '/routes/' . $version . '.php';
-        }
+		foreach ( $config['api_versions'] as $version ) {
+			$register_route->set_version( $version );
+			include $application->get_root_dir() . '/routes/' . $version . '.php';
+		}
     }
 }

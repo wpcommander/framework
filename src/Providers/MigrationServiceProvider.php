@@ -11,11 +11,11 @@ final class MigrationServiceProvider extends ServiceProvider
     {
         $plugin_name = $this->application::$config['namespace'];
 
-        $migration_time = $this->application::$config['migration_time'];
+        $version = (float) $this->application::$config['version'];
 
-        $last_migration_run_time = get_option( $plugin_name . '_last_migration_run_time', 0 );
+        $last_migration_version = (float) get_option( $plugin_name . '_last_migration_version', 0 );
 
-        if ( $last_migration_run_time < $migration_time ) {
+        if ( $last_migration_version < $version ) {
 
             $option_key = $plugin_name . '_migrations';
 
@@ -47,7 +47,7 @@ final class MigrationServiceProvider extends ServiceProvider
             }
 
             update_option( $option_key, serialize( $runes_migrations ) );
-            update_option( $plugin_name . '_last_migration_run_time', $migration_time );
+            update_option( $plugin_name . '_last_migration_version', $version );
         }
     }
 }
