@@ -43,6 +43,7 @@ abstract class Application extends Config
 
         static::$is_boot   = true;
         static::$container = new Container();
+        static::$container->set_instance(Application::class, static::$instance);
 
         $this->set_root_dir_and_url( $root_dir, $root_file );
         $this->set_config();
