@@ -57,6 +57,10 @@ class Container implements ContainerInterface {
 		$this->entries[ $class ] = $concrete;
 	}
 
+	public function set_instance(string $class, object $instance) {
+		$this->instances[$class] = $instance;
+	}
+
 	/**
 	 * Singleton
 	 *
