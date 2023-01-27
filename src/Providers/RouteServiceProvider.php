@@ -26,7 +26,7 @@ final class RouteServiceProvider extends ServiceProvider
 		*
 		* @var RegisterRoute $register_route
 		*/
-		$register_route = $container->singleton( RegisterRoute::class );
+		$register_route = $container->singleton( $application->configuration()['api']['register_route'] );
 
 		$register_route->set_namespace( $config['namespace'] );
 

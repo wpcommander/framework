@@ -109,7 +109,7 @@ abstract class Route
 		 *
 		 * @var RegisterRoute $register_route
 		 */
-		$register_route = static::get_application_instance()::$container->singleton( RegisterRoute::class );
+		$register_route = static::get_application_instance()::$container->singleton( static::get_application_instance()->configuration()['api']['register_route'] );
 		$namespace      = $register_route->get_namespace();
 		$version        = $register_route->get_version();
 		$route          = static::format_api_regex( $path );
