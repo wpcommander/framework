@@ -90,7 +90,7 @@ abstract class Application extends Config
 				 * @var ServiceProvider $provider_object
 				 */
 				$provider_object = static::$container->singleton( $provider );
-				$provider_object->boot( static::$instance );
+				$provider_object->boot();
 			}
 		}
 
@@ -99,7 +99,7 @@ abstract class Application extends Config
 			 * @var ServiceProvider $provider_object
 			 */
 			$provider_object = static::$container->singleton( $provider );
-			$provider_object->boot( static::$instance );
+			$provider_object->boot();
 		}
 	}
 
