@@ -138,6 +138,10 @@ class Common
         return false;
     }
 
+    public static function response( $data, $status = 200 ) {
+        return compact( 'data', 'status' );
+    }
+
     public static function get_elementor_icon( $icon, $attributes = [], $tag = 'i' )
     {
         if ( empty( $icon['library'] ) ) {
