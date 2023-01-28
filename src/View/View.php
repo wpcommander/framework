@@ -4,11 +4,9 @@ namespace WpCommander\View;
 
 use WpCommander\Application;
 
-abstract class View
+class View
 {
     protected static $group_configuration = [];
-
-    abstract protected static function get_application_instance(): Application;
 
     public static function render( string $path, array $args = [] )
     {
@@ -26,7 +24,7 @@ abstract class View
 
     public static function get_path( string $path )
     {
-        $application = static::get_application_instance();
+        $application = Application::$instance;
 
         if ( isset( pathinfo( $path )['extension'] ) ) {
             return $application->get_root_dir() . '/resources/views/' . $path;

@@ -9,13 +9,11 @@ use WpCommander\Providers\EnqueueServiceProvider;
 use WpCommander\Providers\MigrationServiceProvider;
 use WpCommander\Providers\RouteServiceProvider;
 
-abstract class Application extends Config
+class Application extends Config
 {
     public static $instance, $config;
     protected static $instances = [], $is_boot = false, $root_dir, $root_url;
     public static Container $container;
-
-    abstract public function configuration(): array;
 
     /**
      * @return static

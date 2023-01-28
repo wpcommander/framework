@@ -2,6 +2,7 @@
 
 namespace WpCommander\Providers;
 
+use WpCommander\Application;
 use WpCommander\Contracts\Migration;
 use WpCommander\Contracts\ServiceProvider;
 
@@ -9,9 +10,9 @@ final class MigrationServiceProvider extends ServiceProvider
 {
     public function boot()
     {
-        $plugin_name = $this->application::$config['namespace'];
+        $plugin_name = Application::$config['namespace'];
 
-        $version = (float) $this->application::$config['version'];
+        $version = (float) Application::$config['version'];
 
         $last_migration_version = (float) get_option( $plugin_name . '_last_migration_version', 0 );
 
@@ -25,7 +26,7 @@ final class MigrationServiceProvider extends ServiceProvider
                 $runes_migrations = unserialize( $runes_migrations );
             }
 
-            $migrations_path = $this->application::$instance->get_root_dir() . '/database/migrations';
+            $migrations_path = Application::$instance->get_root_dir() . '/database/migrations';
 
             $migrations = scandir( $migrations_path );
 

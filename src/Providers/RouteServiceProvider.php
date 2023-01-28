@@ -2,6 +2,7 @@
 
 namespace WpCommander\Providers;
 
+use WpCommander\Application;
 use WpCommander\Contracts\ServiceProvider;
 use WpCommander\Route\RegisterRoute;
 
@@ -17,7 +18,7 @@ final class RouteServiceProvider extends ServiceProvider
      */
     public function action_rest_api_init(): void
     {
-        $application = $this->application;
+        $application = Application::$instance;
 		$config      = $application::$config;
 		$container   = $application::$container;
 
@@ -26,7 +27,7 @@ final class RouteServiceProvider extends ServiceProvider
 		*
 		* @var RegisterRoute $register_route
 		*/
-		$register_route = $container->singleton( $application->configuration()['api']['register_route'] );
+		$register_route = $container->singleton( RegisterRoute::class );
 
 		$register_route->set_namespace( $config['namespace'] );
 

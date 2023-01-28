@@ -4,10 +4,8 @@ namespace WpCommander\Utils;
 
 use WpCommander\Application;
 
-abstract class Common
+class Common
 {
-    abstract protected static function get_application_instance(): Application;
-
     /**
      * Get asset director
      * @param string $asset file path without asset
@@ -15,7 +13,7 @@ abstract class Common
      */
     public static function asset( $asset = '' )
     {
-        return static::get_application_instance()->get_root_url() . 'assets/' . trim( $asset, '/' );
+        return Application::$instance->get_root_url() . 'assets/' . trim( $asset, '/' );
     }
 
     /**
@@ -25,7 +23,7 @@ abstract class Common
      */
     public static function version()
     {
-        return static::get_application_instance()::$config['version'];
+        return Application::$config['version'];
     }
 
     /**

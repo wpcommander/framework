@@ -8,11 +8,9 @@ use WpCommander\Contracts\Middleware;
 use WP_REST_Request;
 use WpCommander\Di\ContainerException;
 
-abstract class Route
+class Route
 {
     protected static $group_configuration = [];
-
-    abstract protected static function get_application_instance(): Application;
 
     /**
 	 * Group APIs of the same prefix or middleware type
@@ -109,7 +107,7 @@ abstract class Route
 		 *
 		 * @var RegisterRoute $register_route
 		 */
-		$register_route = static::get_application_instance()::$container->singleton( static::get_application_instance()->configuration()['api']['register_route'] );
+		$register_route = Application::$container->singleton( RegisterRoute::class );
 		$namespace      = $register_route->get_namespace();
 		$version        = $register_route->get_version();
 		$route          = static::format_api_regex( $path );
@@ -142,7 +140,7 @@ abstract class Route
 			/**
 			 * Create controller instance with DI Container
 			 */
-			$controller = static::get_application_instance()::$container->get( $callback[0] );
+			$controller = Application::$container->get( $callback[0] );
 			$method     = $callback[1];
 
 			/**
@@ -210,7 +208,7 @@ abstract class Route
 				}
 
 				if ( $type instanceof \ReflectionNamedType ) {
-					return static::get_application_instance()::$container->get( $type->getName() );
+					return Application::$container->get( $type->getName() );
 				}
 
 				throw new ContainerException( 'Failed to resolve class "' . $name . '" because invalid param "' . $name . '"' );
@@ -232,7 +230,7 @@ abstract class Route
 			/**
 			 * Get plugin all middleware
 			 */
-			$application       = static::get_application_instance();
+			$application       = Application::$instance;
 			$config_middleware = $application::$config['middleware'];
 
 			/**

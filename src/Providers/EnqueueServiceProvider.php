@@ -2,6 +2,7 @@
 
 namespace WpCommander\Providers;
 
+use WpCommander\Application;
 use WpCommander\Contracts\ServiceProvider;
 
 final class EnqueueServiceProvider extends ServiceProvider
@@ -23,11 +24,11 @@ final class EnqueueServiceProvider extends ServiceProvider
      */
     public function filter_script_loader_tag( string $tag, string $handle, string $src ): string
     {
-        if ( strpos( $handle, $this->application::$config['namespace'] . '-async' ) !== false ) {
+        if ( strpos( $handle, Application::$instance::$config['namespace'] . '-async' ) !== false ) {
             $tag = str_replace( ' src', ' async="async" src', $tag );
         }
 
-        if ( strpos( $handle, $this->application::$config['namespace'] . '-defer' ) !== false ) {
+        if ( strpos( $handle, Application::$instance::$config['namespace'] . '-defer' ) !== false ) {
             $tag = str_replace( '<script ', '<script defer ', $tag );
         }
 
@@ -41,8 +42,7 @@ final class EnqueueServiceProvider extends ServiceProvider
      */
     public function action_admin_enqueue_scripts( string $hook_suffix ): void
     {
-        $application = $this->application;
-        include_once $application->get_root_dir() . '/enqueues/admin-scripts.php';
+        include_once Application::$instance->get_root_dir() . '/enqueues/admin-scripts.php';
     }
 
     /**
@@ -51,8 +51,6 @@ final class EnqueueServiceProvider extends ServiceProvider
      */
     public function action_wp_enqueue_scripts(): void
     {
-        $application = $this->application;
-        include_once $application->get_root_dir() . '/enqueues/frontend-scripts.php';
+        include_once Application::$instance->get_root_dir() . '/enqueues/frontend-scripts.php';
     }
-
 }
