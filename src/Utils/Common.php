@@ -137,4 +137,19 @@ class Common
 
         return false;
     }
+
+    public static function get_elementor_icon( $icon, $attributes = [], $tag = 'i' )
+    {
+        if ( empty( $icon['library'] ) ) {
+            return false;
+        }
+
+        if ( 'svg' === $icon['library'] ) {
+            $output = \Elementor\Icons_Manager::render_uploaded_svg_icon( $icon['value'] );
+        } else {
+            $output = \Elementor\Icons_Manager::render_font_icon( $icon, $attributes, $tag );
+        }
+
+        return $output;
+    }
 }
