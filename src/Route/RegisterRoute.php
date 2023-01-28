@@ -2,7 +2,7 @@
 
 namespace WpCommander\Route;
 
-abstract class RegisterRoute {
+class RegisterRoute {
 
 	public $namespace;
 

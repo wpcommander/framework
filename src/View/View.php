@@ -20,6 +20,7 @@ class View
         ob_start();
         include static::get_path( $path );
         ob_flush();
+        exit;
     }
 
     public static function get_path( string $path )

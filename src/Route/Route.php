@@ -89,13 +89,15 @@ class Route
 			'methods'             => $method,
 			'callback'            => function ( WP_REST_Request $wp_rest_request ) use ( $callback ) {
 
-				$response = static::get_response( $callback, $wp_rest_request );
+				$response = static::get_response($callback, $wp_rest_request);
 
-				if ( $wp_rest_request->has_param( 'return' ) ) {
+				if ( $wp_rest_request->has_param('return') ) {
 					return $response;
+				} elseif( is_array( $response ) && array_key_exists( 'data', $response ) ) {
+					wp_send_json($response['data'], $response['status']);
 				}
 
-				wp_send_json( $response['data'], $response['status'] );
+				return $response;
 			},
 			'permission_callback' => function ( WP_REST_Request $wp_rest_request ) use ( $group_configuration ) {
 				return static::handle_middleware( $wp_rest_request, $group_configuration );
