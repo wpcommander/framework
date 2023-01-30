@@ -39,6 +39,14 @@ class Application extends Config
             return;
         }
 
+        /**
+         * For develop composer package
+         */
+        if( defined('DoatKolomDev') && DoatKolomDev === true ) {
+
+            require_once $root_dir . '/vendor-src/autoload.php';
+        }
+
         static::$is_boot   = true;
         static::$container = new Container();
         static::$container->set_instance(Application::class, static::$instance);
