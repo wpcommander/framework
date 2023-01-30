@@ -42,7 +42,7 @@ class Application extends Config
         /**
          * For develop composer package
          */
-        if( defined('DoatKolomDev') && DoatKolomDev === true ) {
+        if( defined('DoatKolomDev') && DoatKolomDev === true && is_file($root_dir . '/vendor-src/autoload.php')) {
 
             require_once $root_dir . '/vendor-src/autoload.php';
         }
