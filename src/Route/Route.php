@@ -68,6 +68,18 @@ class Route
     }
 
     /**
+	 * Patch delete type route
+	 *
+	 * @param string         $path
+	 * @param array|\Closure $callback
+	 * @return void
+	 */
+    public static function delete( string $path, $callback ): void
+    {
+        static::register( $path, $callback, 'DELETE' );
+    }
+
+    /**
 	 * Registering rest API with `rest_get_server()`
 	 *
 	 * @param string         $path
