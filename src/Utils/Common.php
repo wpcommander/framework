@@ -166,4 +166,41 @@ class Common
 
         return $output;
     }
+
+    public static function enqueue_script($handler, $src, $dependencies = [], $in_footer = false)
+    {
+        self::script($handler, $src, $dependencies, $in_footer, 'wp_enqueue_script');
+    }
+
+    public static function register_script($handler, $src, $dependencies = [], $in_footer = false)
+    {
+        self::script($handler, $src, $dependencies, $in_footer, 'wp_register_script');
+    }
+
+    public static function script($handler, $src, $dependencies = [], $in_footer, $method)
+    {
+        $file_src = self::asset($src);
+        $file_dependencies = self::get_include('assets/' . rtrim($src, '.js') . '.asset.php');
+
+        foreach ($dependencies as $dependency) {
+            $file_dependencies['dependencies'][] = $dependency;
+        }
+
+        $method($handler, $file_src, $file_dependencies['dependencies'], $file_dependencies['version'], $in_footer);
+    }
+
+    public static function enqueue_style($handler, $src, $dependencies = [], $media = 'all')
+    {
+        self::style($handler, $src, $dependencies, $media, 'wp_enqueue_style');
+    }
+
+    public static function register_style($handler, $src, $dependencies = [], $media = 'all')
+    {
+        self::style($handler, $src, $dependencies, $media, 'wp_register_style');
+    }
+
+    private static function style($handler, $src, $dependencies = [], $media, $method)
+    {
+        $method($handler, self::asset($src), $dependencies, self::version(), $media);
+    }
 }
