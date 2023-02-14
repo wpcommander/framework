@@ -23,7 +23,7 @@ class Common
 
     public static function get_include(string $dir)
     {
-        return include_once self::root_dir($dir);
+        return include self::root_dir($dir);
     }
 
     public static function get_include_once( string $dir )
