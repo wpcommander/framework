@@ -21,6 +21,11 @@ class Common
         return Application::instance()->get_root_dir() . '/' . ltrim( $dir, '/' );
     }
 
+    public static function get_include(string $dir)
+    {
+        return include_once self::root_dir($dir);
+    }
+
     public static function get_include_once( string $dir )
     {
         return include_once self::root_dir( $dir );
