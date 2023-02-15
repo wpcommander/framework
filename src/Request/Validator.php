@@ -27,13 +27,13 @@ class Validator
 				switch ($single_rule[0]) {
 
 					case 'required':
-						if (empty($input_value)) {
+						if (!$wp_rest_request->has_param($input)) {
 							$this->errors[$input][] = $input_message_text . ' field is required';
 						}
 						continue 2; // It's not only breaking the switch case also continue the loop.
 
 					case 'min':
-						if (!empty($input_value)) {
+						if ($wp_rest_request->has_param($input)) {
 							if (strlen($input_value) < $single_rule[1]) {
 								$this->errors[$input][] = $input_message_text . ' must be a minimum of ' . $single_rule[1] . ' characters';
 							}
@@ -41,7 +41,7 @@ class Validator
 						continue 2;
 
 					case 'max':
-						if (!empty($input_value)) {
+						if ($wp_rest_request->has_param($input)) {
 							if (strlen($input_value) > $single_rule[1]) {
 								$this->errors[$input][] = $input_message_text . ' must be a maximum of ' . $single_rule[1] . ' characters';
 							}
@@ -49,12 +49,20 @@ class Validator
 						continue 2;
 
 					case 'bool':
-						if (!empty($input_value)) {
+						if ($wp_rest_request->has_param($input)) {
 							if (!is_bool($input_value)) {
 								$this->errors[$input][] = $input_message_text . ' field is must be boolean';
 							}
 						}
 
+						continue 2;
+
+					case 'array':
+						if ($wp_rest_request->has_param($input)) {
+							if (!is_array($input_value)) {
+								$this->errors[$input][] = $input_message_text . ' field is must be array';
+							}
+						}
 						continue 2;
 
 					case 'file':
