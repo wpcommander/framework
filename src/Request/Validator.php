@@ -2,7 +2,6 @@
 
 namespace WpCommander\Request;
 
-use WpCommander\Utils\Common;
 use WP_REST_Request;
 
 defined('ABSPATH') || exit;
