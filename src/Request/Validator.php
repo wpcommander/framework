@@ -84,7 +84,7 @@ class Validator
 		}
 
 		if (!$return && !empty($this->errors)) {
-			Common::response(['errors' => $this->errors, 'status' => 422]);
+			wp_send_json( ['errors' => $this->errors], 422 );
 		}
 
 		return $this;
