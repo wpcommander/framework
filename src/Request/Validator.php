@@ -91,7 +91,7 @@ class Validator
 		}
 
 		if (!$return && !empty($this->errors)) {
-			wp_send_json( ['errors' => $this->errors], 422 );
+			wp_send_json( ['messages' => $this->errors], 422 );
 		}
 
 		return $this;
